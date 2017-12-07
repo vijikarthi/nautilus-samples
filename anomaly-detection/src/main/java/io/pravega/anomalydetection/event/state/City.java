@@ -1,6 +1,6 @@
 package io.pravega.anomalydetection.event.state;
 
-import org.apache.flink.shaded.com.google.common.collect.ImmutableMap;
+import io.pravega.shaded.com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 
