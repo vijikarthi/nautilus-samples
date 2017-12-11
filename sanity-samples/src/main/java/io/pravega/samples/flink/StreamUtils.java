@@ -21,7 +21,7 @@ import io.pravega.connectors.flink.serialization.PravegaSerialization;
 import io.pravega.connectors.flink.util.FlinkPravegaParams;
 import io.pravega.connectors.flink.util.StreamId;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.flink.streaming.util.serialization.SerializationSchema;
+import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

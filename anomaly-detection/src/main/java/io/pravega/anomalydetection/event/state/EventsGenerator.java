@@ -6,7 +6,6 @@
 package io.pravega.anomalydetection.event.state;
 
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.shaded.com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +17,7 @@ public class EventsGenerator {
 
 	private static final Logger LOG = LoggerFactory.getLogger(EventsGenerator.class);
 
-	private static final List<String> cityNames = Lists.newArrayList(City.CITIES.keySet());
+	private static final List<String> cityNames = new ArrayList<>(City.CITIES.keySet());
 	//private double errorProb = 0.0000001;
 
 	private final double errorProb;
