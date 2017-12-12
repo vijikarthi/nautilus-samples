@@ -11,11 +11,11 @@ Building the samples will compile against the latest snapshot of Pravega and fli
 Follow the steps below to build and publish artifacts from source to local Maven repository.
 
 ```
-$ git clone --branch v0.1.0 https://github.com/pravega/pravega.git
+$ git clone https://github.com/pravega/pravega.git
 $ cd pravega
 $ ./gradlew clean install
 
-$ git clone --branch v0.1.0 https://github.com/pravega/flink-connectors.git
+$ git clone https://github.com/pravega/flink-connectors.git
 $ cd flink-connectors
 $ ./gradlew clean install
 ```
