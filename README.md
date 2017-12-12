@@ -6,7 +6,7 @@ This repository contains sample [Flink](https://flink.apache.org/) applications 
 
 ### Optional - Build Pravega & Flink Connectors
 
-Building the samples will compile against the Pravega 0.1.0 and 0.1.0 Connectors releases. If you need to use a different version of these, you will need to compile them yourself.
+Building the samples will compile against the latest snapshot of Pravega and flink-connectors.
 
 Follow the steps below to build and publish artifacts from source to local Maven repository.
 
