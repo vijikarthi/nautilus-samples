@@ -26,7 +26,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.github.jengelman.gradle.plugins:shadow:1.2.3"
+        classpath "com.github.jengelman.gradle.plugins:shadow:$shadowGradlePlugin"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -53,10 +53,6 @@ allprojects {
             }
             maven {
                 url "https://oss.sonatype.org/content/repositories/snapshots"
-            }
-            //TODO temporarily enabled staging repository to pull Flink 1.4.0-RC3 since it is not published yet to maven central
-            maven {
-                url "https://repository.apache.org/content/repositories/orgapacheflink-1141/"
             }
         }
     }

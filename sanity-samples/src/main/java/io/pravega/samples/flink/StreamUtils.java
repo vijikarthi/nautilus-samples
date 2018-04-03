@@ -137,8 +137,7 @@ public class StreamUtils {
 		final String readerGroup = "testReaderGroup" + scope + streamName;
 		readerGroupManager.createReaderGroup(
 				readerGroup,
-				ReaderGroupConfig.builder().startingTime(0).build(),
-				Collections.singleton(streamName));
+				ReaderGroupConfig.builder().stream(this.scope + "/" + streamName).build());
 
 		ClientFactory clientFactory = ClientFactory.withScope(scope, controllerUri);
 		final String readerGroupId = UUID.randomUUID().toString();
