@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.UUID;
 
 import static org.junit.Assert.assertFalse;
@@ -137,7 +136,7 @@ public class StreamUtils {
 		final String readerGroup = "testReaderGroup" + scope + streamName;
 		readerGroupManager.createReaderGroup(
 				readerGroup,
-                ReaderGroupConfig.builder().stream(this.scope + "/" + streamName).build());
+                ReaderGroupConfig.builder().stream(Stream.of(this.scope, streamName)).build());
 
 		ClientFactory clientFactory = ClientFactory.withScope(scope, controllerUri);
 		final String readerGroupId = UUID.randomUUID().toString();
