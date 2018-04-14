@@ -36,14 +36,22 @@ shadowJar {
 
     configurations = [project.configurations.runtime, project.configurations.shadowRelocate]
 
-    doLast {
-        project.configurations.shadowRelocate.incoming.resolutionResult.allComponents {
-            if (it.id instanceof ModuleComponentIdentifier) {
-                //System.out.println("displayName: " + it.id.displayName + " groupName: " + it.id.group)
-                relocate(it.id.group, "es.shadow.${it.id.group}")
-            }
-        }
-    }
+    relocate "org.slf4j", "es.shaded.org.slf4j"
+    relocate "com.google.code.findbugs", "es.shaded.com.google.code.findbugs"
+    relocate "net.sf.jopt-simple", "es.shaded.net.sf.jopt-simple"
+    relocate "com.carrotsearch", "es.shaded.com.carrotsearch"
+    relocate "joda-time", "es.shaded.joda-time"
+    relocate "org.yaml", "es.shaded.org.yaml"
+    relocate "com.fasterxml", "es.shaded.com.fasterxml"
+    relocate "com.tdunning", "es.shaded.com.tdunning"
+    relocate "org.hdrhistogram", "es.shaded.org.hdrhistogram"
+    relocate "net.java.dev.jna", "es.shaded.net.java.dev.jna"
+    relocate "io.netty", "es.shaded.io.netty"
+    relocate "org.apache.httpcomponents", "es.shaded.org.apache.httpcomponents"
+    relocate "commons-codec", "es.shaded.commons-codec"
+    relocate "commons-logging", "es.shaded.commons-logging"
+    relocate "com.github", "es.shaded.com.github"
+    relocate "org.apache.logging.log4j", "es.shaded.org.apache.logging.log4j"
 
     classifier = null
     mergeServiceFiles()
