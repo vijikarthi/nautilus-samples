@@ -26,7 +26,9 @@ dependencies {
     compile "io.pravega:pravega-connectors-flink_2.11:${pravegaConnectorsVersion}"
     compile "org.apache.flink:flink-streaming-java_2.11:${flinkVersion}"
     compile "org.apache.flink:flink-test-utils_2.11:${flinkVersion}"
-    shadowRelocate "com.emc.nautilus:pravega-credentials:${nautilusCredentials}"
+    if (includeNautilusCredentials.toBoolean()) {
+        shadowRelocate "com.emc.nautilus:pravega-credentials:${nautilusCredentials}"
+    }
 }
 
 shadowJar {
@@ -35,7 +37,9 @@ shadowJar {
     dependencies {
         include dependency("io.pravega:pravega-connectors-flink_2.11:${pravegaConnectorsVersion}")
         include dependency("org.apache.flink:flink-test-utils-junit:${flinkVersion}")
-        include dependency ("com.emc.nautilus:pravega-credentials:${nautilusCredentials}")
+        if (includeNautilusCredentials.toBoolean()) {
+            include dependency("com.emc.nautilus:pravega-credentials:${nautilusCredentials}")
+        }
         include dependency("junit:junit:4.12")
     }
     mergeServiceFiles()

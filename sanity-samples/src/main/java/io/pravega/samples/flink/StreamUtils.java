@@ -12,21 +12,21 @@ package io.pravega.samples.flink;
 
 import io.pravega.client.ClientFactory;
 import io.pravega.client.admin.ReaderGroupManager;
-import io.pravega.client.stream.*;
+import io.pravega.client.admin.StreamManager;
+import io.pravega.client.stream.EventRead;
+import io.pravega.client.stream.EventStreamReader;
+import io.pravega.client.stream.EventStreamWriter;
+import io.pravega.client.stream.EventWriterConfig;
+import io.pravega.client.stream.ReaderConfig;
+import io.pravega.client.stream.ReaderGroupConfig;
+import io.pravega.client.stream.Stream;
+import io.pravega.client.stream.StreamConfiguration;
 import io.pravega.client.stream.impl.JavaSerializer;
-import io.pravega.connectors.flink.FlinkPravegaWriter;
-import io.pravega.connectors.flink.PravegaEventRouter;
-import io.pravega.connectors.flink.PravegaWriterMode;
-import io.pravega.connectors.flink.serialization.PravegaSerialization;
-import io.pravega.connectors.flink.util.FlinkPravegaParams;
-import io.pravega.connectors.flink.util.StreamId;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.flink.api.common.serialization.SerializationSchema;
+import io.pravega.connectors.flink.PravegaConfig;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
-import java.net.URI;
 import java.util.BitSet;
 import java.util.UUID;
 
@@ -37,75 +37,51 @@ public class StreamUtils {
 
 	private static final Logger log = LoggerFactory.getLogger(StreamUtils.class);
 
-	public static final int DEFAULT_NUM_SEGMENTS = 1;
+	public static final String DEFAULT_SCOPE = "nautilus-samples";
 
-	private final String scope = "scope";
+	public static final int DEFAULT_NUM_SEGMENTS = 1;
 
 	private final int numSegments;
 
-	final FlinkPravegaParams flinkPravegaParams;
+	final ParameterTool parameterTool;
 
-	public StreamUtils(FlinkPravegaParams flinkPravegaParams) {
-		this(flinkPravegaParams, DEFAULT_NUM_SEGMENTS);
+	final PravegaConfig pravegaConfig;
+
+	public StreamUtils(ParameterTool parameterTool) {
+		this(parameterTool, DEFAULT_NUM_SEGMENTS);
 	}
 
-	public StreamUtils(FlinkPravegaParams flinkPravegaParams, int numSegments) {
-		this.flinkPravegaParams = flinkPravegaParams;
+	public StreamUtils(ParameterTool parameterTool, int numSegments) {
+		this.parameterTool = parameterTool;
 		this.numSegments = numSegments;
+		this.pravegaConfig = PravegaConfig.fromParams(parameterTool).withDefaultScope(DEFAULT_SCOPE);
 	}
-
-	public String getScope() { return scope; }
 
 	public int getNumSegments() { return numSegments; }
 
-	public FlinkPravegaParams getFlinkPravegaParams() { return flinkPravegaParams; }
+	public PravegaConfig getPravegaConfig() {
+		return pravegaConfig;
+	}
 
-	public URI getControllerUri() { return flinkPravegaParams.getControllerUri(); }
-
-	public void publishData(final StreamId streamId, final int numElements) {
-		final EventStreamWriter<Integer> eventWriter = createWriter(streamId.getName(), streamId.getScope());
+	public void publishData(final Stream stream, final int numElements) {
+		final EventStreamWriter<Integer> eventWriter = createWriter(stream.getStreamName(), stream.getScope());
 		for (int i=1; i<=numElements; i++) {
 			eventWriter.writeEvent(i);
 		}
 		eventWriter.close();
 	}
 
-	public StreamId createStream(final String streamParamName) {
-		final String defaultStreamName = RandomStringUtils.randomAlphabetic(20);
-		StreamId streamId = flinkPravegaParams.createStreamFromParam(streamParamName, scope + "/" + defaultStreamName);
-		log.info("Created stream: {} with scope: {}", streamId.getName(), streamId.getScope());
-		return streamId;
-	}
-
 	public EventStreamWriter<Integer> createWriter(final String streamName, final String scope) {
-		ClientFactory clientFactory = ClientFactory.withScope(scope, flinkPravegaParams.getControllerUri());
+		ClientFactory clientFactory = ClientFactory.withScope(scope, pravegaConfig.getClientConfig());
 		return clientFactory.createEventWriter(
 				streamName,
 				new JavaSerializer<>(),
 				EventWriterConfig.builder().build());
 	}
 
-	// TODO move these methods to FlinkPravegaParams class
-	public <T extends Serializable> FlinkPravegaWriter<T> newExactlyOnceWriter(final StreamId stream,
-																	final Class<T> eventType,
-																	final PravegaEventRouter<T> router) {
-		return newExactlyOnceWriter(stream, PravegaSerialization.serializationFor(eventType), router);
-	}
+	public void validateJobOutputResults(Stream outputStream, int numElements) throws Exception {
 
-	public <T extends Serializable> FlinkPravegaWriter<T> newExactlyOnceWriter(final StreamId stream,
-																			   final SerializationSchema<T> serializationSchema,
-																			   final PravegaEventRouter<T> router) {
-		FlinkPravegaWriter writer = new FlinkPravegaWriter<T>(getControllerUri(), stream.getScope(), stream.getName(), serializationSchema, router);
-		writer.setPravegaWriterMode(PravegaWriterMode.EXACTLY_ONCE);
-		return writer;
-	}
-
-
-	public void validateJobOutputResults(String outputStream, String defaultScope, int numElements, String controllerUri) throws Exception {
-
-		try (EventStreamReader<Integer> reader = getIntegerReader(outputStream,
-				defaultScope,
-				URI.create(controllerUri))) {
+		try (EventStreamReader<Integer> reader = getIntegerReader(outputStream)) {
 
 			final BitSet duplicateChecker = new BitSet();
 
@@ -129,16 +105,14 @@ public class StreamUtils {
 
 	}
 
-	public EventStreamReader<Integer> getIntegerReader(final String streamName,
-														final String scope,
-														final URI controllerUri) {
-		ReaderGroupManager readerGroupManager = ReaderGroupManager.withScope(scope, controllerUri);
-		final String readerGroup = "testReaderGroup" + scope + streamName;
+	public EventStreamReader<Integer> getIntegerReader(final Stream stream) {
+		ReaderGroupManager readerGroupManager = ReaderGroupManager.withScope(stream.getScope(), pravegaConfig.getClientConfig());
+		final String readerGroup = "testReaderGroup" + stream.getScope() + stream.getStreamName();
 		readerGroupManager.createReaderGroup(
 				readerGroup,
-                ReaderGroupConfig.builder().stream(Stream.of(this.scope, streamName)).build());
+                ReaderGroupConfig.builder().stream(stream).build());
 
-		ClientFactory clientFactory = ClientFactory.withScope(scope, controllerUri);
+		ClientFactory clientFactory = ClientFactory.withScope(stream.getScope(), pravegaConfig.getClientConfig());
 		final String readerGroupId = UUID.randomUUID().toString();
 		return clientFactory.createReader(
 				readerGroupId,
@@ -147,5 +121,34 @@ public class StreamUtils {
 				ReaderConfig.builder().build());
 	}
 
+	/**
+	 * Creates a Pravega stream with a default configuration.
+	 *
+	 * @param streamName the stream name (qualified or unqualified).
+	 */
+	public Stream createStream(String streamName) {
+		return createStream(streamName, StreamConfiguration.builder().build());
+	}
+
+	/**
+	 * Creates a Pravega stream with a given configuration.
+	 *
+	 * @param streamName the stream name (qualified or unqualified).
+	 * @param streamConfig the stream configuration (scaling policy, retention policy).
+	 */
+	public Stream createStream(String streamName, StreamConfiguration streamConfig) {
+		// resolve the qualified name of the stream
+		Stream stream = pravegaConfig.resolve(streamName);
+
+		try(StreamManager streamManager = StreamManager.create(pravegaConfig.getClientConfig())) {
+			// create the requested scope (if necessary)
+			streamManager.createScope(stream.getScope());
+
+			// create the requested stream based on the given stream configuration
+			streamManager.createStream(stream.getScope(), stream.getStreamName(), streamConfig);
+		}
+
+		return stream;
+	}
 
 }

@@ -14,17 +14,18 @@ import io.pravega.anomalydetection.event.AppConfiguration;
 import io.pravega.anomalydetection.event.producer.ControlledSourceContextProducer;
 import io.pravega.anomalydetection.event.producer.SourceContextProducer;
 import io.pravega.anomalydetection.event.state.Event;
+import io.pravega.client.stream.Stream;
 import io.pravega.connectors.flink.FlinkPravegaWriter;
+import io.pravega.connectors.flink.PravegaConfig;
+import io.pravega.connectors.flink.serialization.PravegaSerialization;
 import io.pravega.connectors.flink.PravegaEventRouter;
-import io.pravega.connectors.flink.util.FlinkPravegaParams;
-import io.pravega.connectors.flink.util.StreamId;
 import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 public class PravegaEventPublisher extends AbstractPipeline {
 
-	public PravegaEventPublisher(AppConfiguration appConfiguration, FlinkPravegaParams pravega) {
-		super(appConfiguration, pravega);
+	public PravegaEventPublisher(AppConfiguration appConfiguration, PravegaConfig pravegaConfig, Stream stream) {
+		super(appConfiguration, pravegaConfig, stream);
 	}
 
 	@Override
@@ -35,8 +36,13 @@ public class PravegaEventPublisher extends AbstractPipeline {
 	private void publishUsingFlinkConnector(AppConfiguration appConfiguration) throws Exception {
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-		StreamId streamId = getStreamId();
-		FlinkPravegaWriter<Event> writer = pravega.newWriter(streamId, Event.class, new EventRouter());
+		Stream streamId = getStreamId();
+		FlinkPravegaWriter<Event> writer = FlinkPravegaWriter.<Event>builder()
+				.withPravegaConfig(getPravegaConfig())
+				.forStream(stream)
+				.withSerializationSchema(PravegaSerialization.serializationFor(Event.class))
+				.withEventRouter(new EventRouter())
+				.build();
 
 		if(appConfiguration.getProducer().isControlledEnv()) {
 			if(!(env instanceof LocalStreamEnvironment)) {
@@ -47,10 +53,10 @@ public class PravegaEventPublisher extends AbstractPipeline {
 			long latency = appConfiguration.getProducer().getLatencyInMilliSec();
 			int capacity = appConfiguration.getProducer().getCapacity();
 			ControlledSourceContextProducer controlledSourceContextProducer = new ControlledSourceContextProducer(capacity, latency);
-			env.addSource(controlledSourceContextProducer).name("EventSource").addSink(writer).name("Pravega-" + streamId.getName());
+			env.addSource(controlledSourceContextProducer).name("EventSource").addSink(writer).name("Pravega-" + streamId.getStreamName());
 		} else {
 			SourceContextProducer sourceContextProducer = new SourceContextProducer(appConfiguration);
-			env.addSource(sourceContextProducer).name("EventSource").addSink(writer).name("Pravega-" + streamId.getName());
+			env.addSource(sourceContextProducer).name("EventSource").addSink(writer).name("Pravega-" + streamId.getStreamName());
 		}
 
 		env.execute(appConfiguration.getName()+"-producer");
