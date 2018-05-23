@@ -116,7 +116,7 @@ To run this sample in controlled mode in Nautilus, you need to run the distribut
 From within this distribution directory, launch the application by running this command:
 
 ```
-./bin/anomaly-detection --mode producer --controller tcp://controller.pravega.l4lb.thisdcos.directory:9091 --stream <STREAM>/<NAME> --producer-controlled true
+./bin/anomaly-detection --mode producer --controller tcp://controller.pravega.l4lb.thisdcos.directory:9091 --scope <SCOPE> --stream <STREAM> --producer-controlled true
 ```
 
 Leave the program running for a while, to generate a few events per second for a number of simulated network clients. Press ENTER to simulate invalid events or CTRL-C to exit the producer.

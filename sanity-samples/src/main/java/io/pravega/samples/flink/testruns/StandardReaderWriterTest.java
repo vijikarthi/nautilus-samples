@@ -21,10 +21,10 @@ package io.pravega.samples.flink.testruns;
  * Can be used to test happy path integration
  */
 
-import io.pravega.connectors.flink.util.FlinkPravegaParams;
-import io.pravega.connectors.flink.util.StreamId;
+import io.pravega.client.stream.Stream;
 import io.pravega.samples.flink.EventCounterApp;
 import io.pravega.samples.flink.StreamUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +43,7 @@ public class StandardReaderWriterTest {
 		/*
 		  All arguments are optional.
 		  --controller <PRAVEGA_CONTROLLER_ID>
+		  --scope <PRAVEGA_SCOPE>
 		  --segments <TOTAL_SEGMENTS>
 		  --parallelism <FLINK_PARALLELISM>
 		  --inStream <SCOPE/INPUT_STREAM_NAME>
@@ -51,18 +52,24 @@ public class StandardReaderWriterTest {
 		  --numElements <totalEvents>
 		 */
 
-		FlinkPravegaParams flinkPravegaParams = new FlinkPravegaParams(params);
-		final String controllerUri = flinkPravegaParams.getControllerUri().toString();
+		StreamUtils streamUtils = new StreamUtils(params);
+
 		int numElements = params.getInt("numElements", 1000);
 		boolean validateResults = params.getBoolean("validateResults", true);
 
-		StreamUtils streamUtils = new StreamUtils(flinkPravegaParams);
-		StreamId inStreamId = streamUtils.createStream("inStream");
-		StreamId outStreamId = streamUtils.createStream("outStream");
+		final String IN_STREAM_PARAMETER = "inStream";
+		final String OUT_STREAM_PARAMETER = "outStream";
+
+		String inStreamName = params.get(IN_STREAM_PARAMETER, RandomStringUtils.randomAlphabetic(20));
+		String outStreamName = params.get(OUT_STREAM_PARAMETER, RandomStringUtils.randomAlphabetic(20));
+
+		Stream inStream = streamUtils.createStream(inStreamName);
+		Stream outStream = streamUtils.createStream(outStreamName);
+
 		try {
-			streamUtils.publishData(inStreamId, numElements);
+			streamUtils.publishData(inStream, numElements);
 			EventCounterApp eventCounterApp = new EventCounterApp();
-			eventCounterApp.standardReadWriteSimulator(inStreamId, outStreamId, streamUtils, numElements);
+			eventCounterApp.standardReadWriteSimulator(inStream, outStream, streamUtils, numElements, streamUtils.getPravegaConfig());
 		} catch (Exception e) {
 			log.error("Exception occurred", e);
 		}
@@ -73,7 +80,7 @@ public class StandardReaderWriterTest {
 			if (validateResults) {
 				log.info("Validating results...");
 				try {
-					streamUtils.validateJobOutputResults(outStreamId.getName(), outStreamId.getScope(), numElements, controllerUri);
+					streamUtils.validateJobOutputResults(outStream, numElements);
 				} catch (Exception e) {
 					log.error("Failed to verify the sink results", e);
 				}

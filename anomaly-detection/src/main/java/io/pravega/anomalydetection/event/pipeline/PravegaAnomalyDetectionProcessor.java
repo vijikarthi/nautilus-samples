@@ -13,9 +13,10 @@ package io.pravega.anomalydetection.event.pipeline;
 import io.pravega.anomalydetection.event.AppConfiguration;
 import io.pravega.anomalydetection.event.state.Event;
 import io.pravega.anomalydetection.event.state.Result;
+import io.pravega.client.stream.Stream;
+import io.pravega.connectors.flink.PravegaConfig;
+import io.pravega.connectors.flink.serialization.PravegaSerialization;
 import io.pravega.connectors.flink.FlinkPravegaReader;
-import io.pravega.connectors.flink.util.FlinkPravegaParams;
-import io.pravega.connectors.flink.util.StreamId;
 import io.pravega.shaded.com.google.gson.Gson;
 import org.apache.flink.api.common.functions.FoldFunction;
 import org.apache.flink.api.common.functions.RuntimeContext;
@@ -42,15 +43,18 @@ import java.util.*;
  */
 public class PravegaAnomalyDetectionProcessor extends AbstractPipeline {
 
-	public PravegaAnomalyDetectionProcessor(AppConfiguration appConfiguration, FlinkPravegaParams pravega) {
-		super(appConfiguration, pravega);
+	public PravegaAnomalyDetectionProcessor(AppConfiguration appConfiguration, PravegaConfig pravegaConfig, Stream stream) {
+		super(appConfiguration, pravegaConfig, stream);
 	}
 
 	@Override
 	public void run() throws Exception {
 		// Configure the Pravega event reader
-		long startTime = 0;
-		FlinkPravegaReader<Event> flinkPravegaReader = pravega.newReader(getStreamId(), startTime, Event.class);
+		FlinkPravegaReader<Event> flinkPravegaReader = FlinkPravegaReader.<Event>builder()
+				.withPravegaConfig(getPravegaConfig())
+				.forStream(getStreamId())
+				.withDeserializationSchema(PravegaSerialization.deserializationFor(Event.class))
+				.build();
 
 		// Configure the Flink job environment
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();

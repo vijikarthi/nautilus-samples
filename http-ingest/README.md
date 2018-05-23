@@ -2,7 +2,7 @@
 
 This sample illustrates how to build an ingestion gateway as a webapp. The webapp serves a simple API to allow ingesting data into any Pravega stream.
 
-# Ingestion API
+## Ingestion API
 
 By default the webapp listens on port 9099 but that is configurable. The app provides a single API method.
 
@@ -18,7 +18,7 @@ Parameters:
 * Query Parameters:
     * key - Optional. The routing key is set via a query parameter.
 
-# Running in Nautilus
+## Running in Nautilus
 
 You must first have the following pre-requisites installed.
 
@@ -32,7 +32,7 @@ First target the Nautilus cluster and login.
 ```
 nautilus target <TARGET_IP>
 nautilus login
-# .. enter username/password
+## .. enter username/password
 ```
 
 Ensure you add the Target cluster IP as a docker insecure registry (or 0.0.0.0). This is located in preferences/daemon for docker for mac.

@@ -13,12 +13,14 @@ package io.pravega.samples.flink;
 import io.pravega.client.stream.*;
 import io.pravega.connectors.flink.FlinkPravegaReader;
 import io.pravega.connectors.flink.FlinkPravegaWriter;
+import io.pravega.connectors.flink.PravegaConfig;
 import io.pravega.connectors.flink.PravegaWriterMode;
 import io.pravega.connectors.flink.PravegaEventRouter;
-import io.pravega.connectors.flink.util.StreamId;
+import io.pravega.connectors.flink.serialization.PravegaSerialization;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
+import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.state.CheckpointListener;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -45,7 +47,7 @@ public class EventCounterApp {
 		this.parallelism = parallelism;
 	}
 
-	public void exactlyOnceWriteSimulator(final StreamId outStreamId, final StreamUtils streamUtils, int numElements) throws Exception {
+	public void exactlyOnceWriteSimulator(final StreamUtils streamUtils, final Stream outStream, int numElements) throws Exception {
 
 		final int checkpointInterval = 100;
 
@@ -53,9 +55,8 @@ public class EventCounterApp {
 		final long delayBetweenAttempts = 0L;
 
 		//30 sec timeout for all
-		final long txTimeout = 30 * 1000;
-		final long txTimeoutMax = 30 * 1000;
-		final long txTimeoutGracePeriod = 30 * 1000;
+		final long txTimeout = 30;
+		final long txTimeoutGracePeriod = 30;
 
 		final String jobName = "ExactlyOnceSimulator";
 
@@ -65,9 +66,16 @@ public class EventCounterApp {
 		env.enableCheckpointing(checkpointInterval);
 		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(restartAttempts, delayBetweenAttempts));
 
-		// Pravega Writer
-		FlinkPravegaWriter<Integer> pravegaExactlyOnceWriter = streamUtils.newExactlyOnceWriter(outStreamId,
-				Integer.class, new IdentityRouter<>());
+		// Pravega Txn Writer
+		FlinkPravegaWriter<Integer> pravegaExactlyOnceWriter = FlinkPravegaWriter.<Integer>builder()
+				.withPravegaConfig(streamUtils.getPravegaConfig())
+				.forStream(outStream)
+				.withSerializationSchema(PravegaSerialization.serializationFor(Integer.class))
+				.withEventRouter(new IdentityRouter<Integer>())
+				.withWriterMode(PravegaWriterMode.EXACTLY_ONCE)
+				.withTxnTimeout(Time.seconds(txTimeout))
+				.withTxnGracePeriod(Time.seconds(txTimeoutGracePeriod))
+				.build();
 
 		env
 				.addSource(new IntegerCounterSourceGenerator(numElements))
@@ -78,9 +86,8 @@ public class EventCounterApp {
 		env.execute(jobName);
 	}
 
-	public void exactlyOnceReadWriteSimulator(final StreamId inStreamId, final StreamId outStreamId,
-											  final StreamUtils streamUtils, int numElements,
-											  boolean generateData, boolean throttled) throws Exception {
+	public void exactlyOnceReadWriteSimulator(final StreamUtils streamUtils, final Stream inStream, final Stream outStream,
+											  int numElements, boolean generateData, boolean throttled) throws Exception {
 
 		final int blockAtNum = numElements/2;
 		final int sleepPerElement = 1;
@@ -88,13 +95,11 @@ public class EventCounterApp {
 		final int checkpointInterval = 100;
 		final int taskFailureRestartAttempts = 3;
 		final long delayBetweenRestartAttempts = 0L;
-		final long startTime = 0L;
 		final String jobName = "exactlyOnceReadWriteSimulator";
 
 		//30 sec timeout for all
-		final long txTimeout = 30 * 1000;
-		final long txTimeoutMax = 30 * 1000;
-		final long txTimeoutGracePeriod = 30 * 1000;
+		final long txTimeout = 30;
+		final long txTimeoutGracePeriod = 30;
 
 		EventStreamWriter<Integer> eventWriter;
 		ThrottledIntegerWriter producer = null;
@@ -109,11 +114,22 @@ public class EventCounterApp {
 		env.getCheckpointConfig().setCheckpointTimeout(2000);
 
 		// the Pravega reader
-		final FlinkPravegaReader<Integer> pravegaSource = streamUtils.getFlinkPravegaParams().newReader(inStreamId, startTime, Integer.class);
+		final FlinkPravegaReader<Integer> pravegaSource = FlinkPravegaReader.<Integer>builder()
+				.withPravegaConfig(streamUtils.getPravegaConfig())
+				.forStream(inStream)
+				.withDeserializationSchema(PravegaSerialization.deserializationFor(Integer.class))
+				.build();
 
 		// Pravega Writer
-		FlinkPravegaWriter<Integer> pravegaExactlyOnceWriter = streamUtils.newExactlyOnceWriter(outStreamId,
-				Integer.class, new IdentityRouter<>());
+		FlinkPravegaWriter<Integer> pravegaExactlyOnceWriter = FlinkPravegaWriter.<Integer>builder()
+				.withPravegaConfig(streamUtils.getPravegaConfig())
+				.forStream(outStream)
+				.withSerializationSchema(PravegaSerialization.serializationFor(Integer.class))
+				.withEventRouter(new IdentityRouter<Integer>())
+				.withWriterMode(PravegaWriterMode.EXACTLY_ONCE)
+				.withTxnTimeout(Time.seconds(txTimeout))
+				.withTxnGracePeriod(Time.seconds(txTimeoutGracePeriod))
+				.build();
 
 		DataStream<Integer> stream =
 		env.addSource(pravegaSource)
@@ -130,7 +146,7 @@ public class EventCounterApp {
 				.setParallelism(1);
 
 		if (generateData) {
-			eventWriter = streamUtils.createWriter(inStreamId.getName(), inStreamId.getScope());
+			eventWriter = streamUtils.createWriter(inStream.getStreamName(), inStream.getScope());
 			producer = new ThrottledIntegerWriter(eventWriter, numElements, blockAtNum, sleepPerElement, false);
 			producer.start();
 			if (throttled) {
@@ -151,12 +167,12 @@ public class EventCounterApp {
 
 	}
 
-	public void standardReadWriteSimulator(final StreamId inStreamId, final StreamId outStreamId, final StreamUtils streamUtils, int numElements) throws Exception {
+	public void standardReadWriteSimulator(final Stream inStream, final Stream outStream, final StreamUtils streamUtils,
+										   int numElements, PravegaConfig pravegaConfig) throws Exception {
 
 		final int checkpointInterval = 100;
 		final int taskFailureRestartAttempts = 1;
 		final long delayBetweenRestartAttempts = 0L;
-		final long startTime = 0L;
 		final String jobName = "standardReadWriteSimulator";
 
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -165,11 +181,20 @@ public class EventCounterApp {
 		env.setRestartStrategy(RestartStrategies.fixedDelayRestart(taskFailureRestartAttempts, delayBetweenRestartAttempts));
 
 		// the Pravega reader
-		final FlinkPravegaReader<Integer> pravegaSource = streamUtils.getFlinkPravegaParams().newReader(inStreamId, startTime, Integer.class);
+		final FlinkPravegaReader<Integer> pravegaSource = FlinkPravegaReader.<Integer>builder()
+				.withPravegaConfig(pravegaConfig)
+				.forStream(inStream)
+				.withDeserializationSchema(PravegaSerialization.deserializationFor(Integer.class))
+				.build();
 
 		// Pravega Writer
-		FlinkPravegaWriter<Integer> pravegaWriter = streamUtils.getFlinkPravegaParams().newWriter(outStreamId, Integer.class, new IdentityRouter<>());
-		pravegaWriter.setPravegaWriterMode(PravegaWriterMode.ATLEAST_ONCE);
+		FlinkPravegaWriter<Integer> pravegaWriter = FlinkPravegaWriter.<Integer>builder()
+				.withPravegaConfig(pravegaConfig)
+				.forStream(outStream)
+				.withSerializationSchema(PravegaSerialization.serializationFor(Integer.class))
+				.withEventRouter(new IdentityRouter<Integer>())
+				.withWriterMode(PravegaWriterMode.ATLEAST_ONCE)
+				.build();
 
 		DataStream<Integer> stream = env.addSource(pravegaSource).map(new IdentityMapper<>());
 

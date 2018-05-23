@@ -11,7 +11,8 @@
 package io.pravega.anomalydetection.event.pipeline;
 
 import io.pravega.anomalydetection.event.AppConfiguration;
-import io.pravega.connectors.flink.util.FlinkPravegaParams;
+import io.pravega.client.stream.Stream;
+import io.pravega.connectors.flink.PravegaConfig;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +23,14 @@ public class PipelineRunner {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PipelineRunner.class);
 
+	public static final String STREAM_PARAMETER = "stream";
+	public static final String DEFAULT_STREAM = "NetworkPacket";
+	public static final String DEFAULT_SCOPE = "nautilus-samples";
+
 	private AppConfiguration appConfiguration;
-	private FlinkPravegaParams pravega;
+	private PravegaConfig pravegaConfig;
 	private String runMode;
+	private Stream stream;
 
 	private void parseConfigurations(String[] args) {
 		LOG.info("ApplicationMain Main.. Arguments: {}", Arrays.asList(args));
@@ -95,7 +101,8 @@ public class PipelineRunner {
 
 		// controller: The pravega controller endpoint to connect to.
 		// stream: The pravega stream to use (<scope>/<name>). If not specified, defaults to "examples/NetworkPacket"
-		pravega = new FlinkPravegaParams(ParameterTool.fromArgs(args));
+		pravegaConfig = PravegaConfig.fromParams(params).withDefaultScope(DEFAULT_SCOPE);
+		stream = pravegaConfig.resolve(params.get(STREAM_PARAMETER, DEFAULT_STREAM));
 	}
 
 	private void printUsage() {
@@ -113,13 +120,13 @@ public class PipelineRunner {
 		parseConfigurations(args);
 
 		try {
-			new StreamCreator(appConfiguration, pravega).run();
+			new StreamCreator(appConfiguration, pravegaConfig, stream).run();
 
 			AbstractPipeline pipeline = null;
 			switch (runMode) {
 				case "producer":
 					LOG.info("Running event publisher to publish events to Pravega stream");
-					pipeline = new PravegaEventPublisher(appConfiguration, pravega);
+					pipeline = new PravegaEventPublisher(appConfiguration, pravegaConfig, stream);
 					break;
 				case "processor":
 					if (appConfiguration.getPipeline().getElasticSearch().isSinkResults()) {
@@ -127,7 +134,7 @@ public class PipelineRunner {
 					}
 
 					LOG.info("Running anomaly detection by reading from Pravega stream");
-					pipeline = new PravegaAnomalyDetectionProcessor(appConfiguration, pravega);
+					pipeline = new PravegaAnomalyDetectionProcessor(appConfiguration, pravegaConfig, stream);
 					break;
 				default:
 					LOG.error("Incorrect run mode [{}] specified", runMode);
