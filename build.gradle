@@ -16,21 +16,19 @@ buildscript {
                 url findProperty("repositoryUrl")
             }
         }
-        else {
-            maven {
-                url "https://plugins.gradle.org/m2/"
-            }
-            jcenter()
-            mavenCentral()
-            maven {
-                url "https://repository.apache.org/snapshots"
-            }
-            maven {
-                url "https://oss.sonatype.org/content/repositories/snapshots"
-            }
-            maven {
-                url "https://oss.jfrog.org/jfrog-dependencies"
-            }
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        jcenter()
+        mavenCentral()
+        maven {
+            url "https://repository.apache.org/snapshots"
+        }
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots"
+        }
+        maven {
+            url "https://oss.jfrog.org/jfrog-dependencies"
         }
     }
 
@@ -54,18 +52,16 @@ allprojects {
                 url findProperty("repositoryUrl")
             }
         }
-        else {
-            jcenter()
-            mavenCentral()
-            maven {
-                url "https://repository.apache.org/snapshots"
-            }
-            maven {
-                url "https://oss.sonatype.org/content/repositories/snapshots"
-            }
-            maven {
-                url "https://oss.jfrog.org/jfrog-dependencies"
-            }
+        jcenter()
+        mavenCentral()
+        maven {
+            url "https://repository.apache.org/snapshots"
+        }
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots"
+        }
+        maven {
+            url "https://oss.jfrog.org/jfrog-dependencies"
         }
     }
 
