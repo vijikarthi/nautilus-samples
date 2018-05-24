@@ -20,7 +20,7 @@ $ cd flink-connectors
 $ ./gradlew clean install
 ```
 
-Alternatively, follow the instructions from [here](http://pravega.io/docs/getting-started/) to pull from release repository.
+Alternatively, follow the instructions from [here](http://pravega.io/docs/latest/getting-started/) to pull from release repository.
 
 ### Build the Sample Code
 
