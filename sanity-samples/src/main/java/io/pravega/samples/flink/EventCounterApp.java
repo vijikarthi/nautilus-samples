@@ -56,7 +56,6 @@ public class EventCounterApp {
 
 		//30 sec timeout for all
 		final long txTimeout = 30;
-		final long txTimeoutGracePeriod = 30;
 
 		final String jobName = "ExactlyOnceSimulator";
 
@@ -74,7 +73,6 @@ public class EventCounterApp {
 				.withEventRouter(new IdentityRouter<Integer>())
 				.withWriterMode(PravegaWriterMode.EXACTLY_ONCE)
 				.withTxnTimeout(Time.seconds(txTimeout))
-				.withTxnGracePeriod(Time.seconds(txTimeoutGracePeriod))
 				.build();
 
 		env
@@ -99,7 +97,6 @@ public class EventCounterApp {
 
 		//30 sec timeout for all
 		final long txTimeout = 30;
-		final long txTimeoutGracePeriod = 30;
 
 		EventStreamWriter<Integer> eventWriter;
 		ThrottledIntegerWriter producer = null;
@@ -128,7 +125,6 @@ public class EventCounterApp {
 				.withEventRouter(new IdentityRouter<Integer>())
 				.withWriterMode(PravegaWriterMode.EXACTLY_ONCE)
 				.withTxnTimeout(Time.seconds(txTimeout))
-				.withTxnGracePeriod(Time.seconds(txTimeoutGracePeriod))
 				.build();
 
 		DataStream<Integer> stream =
