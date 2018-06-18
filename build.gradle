@@ -77,8 +77,6 @@ task sourceZip(type: Zip) {
     version = project.version
     classifier = 'source'
 
-    exclude "gradlew*"
-    exclude "gradle/wrapper/**"
     exclude ".gradle/"
     exclude "**/build/**"
     exclude "**/out/**"
