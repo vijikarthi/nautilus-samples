@@ -55,7 +55,7 @@ public class EventCounterApp {
 		final long delayBetweenAttempts = 0L;
 
 		//30 sec timeout for all
-		final long txTimeout = 30;
+		final long txnLeaseRenewalPeriod = 30;
 
 		final String jobName = "ExactlyOnceSimulator";
 
@@ -72,7 +72,7 @@ public class EventCounterApp {
 				.withSerializationSchema(PravegaSerialization.serializationFor(Integer.class))
 				.withEventRouter(new IdentityRouter<Integer>())
 				.withWriterMode(PravegaWriterMode.EXACTLY_ONCE)
-				.withTxnTimeout(Time.seconds(txTimeout))
+				.withTxnLeaseRenewalPeriod(Time.seconds(txnLeaseRenewalPeriod))
 				.build();
 
 		env
@@ -96,7 +96,7 @@ public class EventCounterApp {
 		final String jobName = "exactlyOnceReadWriteSimulator";
 
 		//30 sec timeout for all
-		final long txTimeout = 30;
+		final long txnLeaseRenewalPeriod = 30;
 
 		EventStreamWriter<Integer> eventWriter;
 		ThrottledIntegerWriter producer = null;
@@ -124,7 +124,7 @@ public class EventCounterApp {
 				.withSerializationSchema(PravegaSerialization.serializationFor(Integer.class))
 				.withEventRouter(new IdentityRouter<Integer>())
 				.withWriterMode(PravegaWriterMode.EXACTLY_ONCE)
-				.withTxnTimeout(Time.seconds(txTimeout))
+				.withTxnLeaseRenewalPeriod(Time.seconds(txnLeaseRenewalPeriod))
 				.build();
 
 		DataStream<Integer> stream =
