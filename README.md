@@ -2,25 +2,10 @@
 
 This repository contains sample [Flink](https://flink.apache.org/) applications that integrate with [Pravega](http://pravega.io/) and are optimized for use in Nautilus.
 
+The samples are based on the latest release of Pravega (`0.3.0`).
+
 ## Getting Started
-
-### Optional - Build Pravega & Flink Connectors
-
-Building the samples will compile against the latest snapshot of Pravega and flink-connectors.
-
-Follow the steps below to build and publish artifacts from source to local Maven repository.
-
-```
-$ git clone https://github.com/pravega/pravega.git
-$ cd pravega
-$ ./gradlew clean install
-
-$ git clone https://github.com/pravega/flink-connectors.git
-$ cd flink-connectors
-$ ./gradlew clean install
-```
-
-Alternatively, follow the instructions from [here](http://pravega.io/docs/latest/getting-started/) to pull from release repository.
+These instructions assume that Pravega server is already installed and available.  See the [Pravega Deployment Overview](http://pravega.io/docs/v0.3.0/deployment/deployment/) for more information.
 
 ### Build the Sample Code
 
