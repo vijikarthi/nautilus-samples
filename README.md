@@ -5,7 +5,7 @@ This repository contains sample [Flink](https://flink.apache.org/) applications 
 The samples are based on the latest release of Pravega (`0.3.0`).
 
 ## Getting Started
-These instructions assume that Pravega server is already installed and available.  See the [Pravega Deployment Overview](http://pravega.io/docs/v0.3.0/deployment/deployment/) for more information.
+These instructions assume that a Pravega cluster is already installed and available.  See the [Pravega Deployment Overview](http://pravega.io/docs/v0.3.0/deployment/deployment/) for more information.
 
 ### Build the Sample Code
 
