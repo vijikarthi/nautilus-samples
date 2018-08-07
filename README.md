@@ -2,7 +2,7 @@
 
 This repository contains sample [Flink](https://flink.apache.org/) applications that integrate with [Pravega](http://pravega.io/) and are optimized for use in Nautilus.
 
-The samples are based on the latest release of Pravega (`0.3.0`).
+The samples are based on the latest release of Pravega (`0.3.1`).
 
 ## Getting Started
 These instructions assume that a Pravega cluster is already installed and available.  See the [Pravega Deployment Overview](http://pravega.io/docs/v0.3.0/deployment/deployment/) for more information.
